@@ -1,36 +1,27 @@
 import socket
+import os
 
-def main():
-    server_address = "localhost"
-    port = 55
+PORT = 55
 
-    try:
-        # Connect to the server
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect((server_address, port))
-        print(f"Connected to server at {server_address}:{port}")
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(("localhost", PORT))
+server_socket.listen(1)
+print(f"Server listening on port {PORT}...")
 
-        # Get file name from user
-        file_name = input("Enter the name of the file to request: ")
+client_socket, addr = server_socket.accept()
+print(f"Client connected from {addr}")
 
-        # Send file request to server
-        client_socket.sendall(file_name.encode())
+# Receive file request
+file_name = client_socket.recv(1024).decode()
+print(f"Client requested: {file_name}")
 
-        # Prepare to receive the file
-        with open(f"Received_{file_name}", "wb") as file:
-            while True:
-                data = client_socket.recv(1024)
-                if not data:
-                    break  # Stop when no more data is received
-                file.write(data)
+# Check and send file
+if os.path.exists(file_name):
+    with open(file_name, "rb") as file:
+        client_socket.sendall(file.read())
+    print("File sent successfully.")
+else:
+    print("File not found.")
 
-        print(f"File received & saved as 'Received_{file_name}'.")
-
-    except Exception as e:
-        print("Error:", e)
-    
-    finally:
-        client_socket.close()
-
-if __name__ == "__main__":
-    main()
+client_socket.close()
+server_socket.close()
